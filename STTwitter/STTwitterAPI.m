@@ -24,6 +24,7 @@ static NSDateFormatter *dateFormatter = nil;
 
 @interface STTwitterAPI ()
 @property (nonatomic, retain) NSObject <STTwitterProtocol> *oauth;
+@property (nonatomic, weak) id accountStoreObserver;
 @end
 
 @implementation STTwitterAPI
@@ -33,17 +34,23 @@ static NSDateFormatter *dateFormatter = nil;
     
     STTwitterAPI * __weak weakSelf = self;
     
-    [[NSNotificationCenter defaultCenter] addObserverForName:ACAccountStoreDidChangeNotification object:nil queue:nil usingBlock:^(NSNotification *note) {
+    _accountStoreObserver = [[NSNotificationCenter defaultCenter] addObserverForName:ACAccountStoreDidChangeNotification
+                                                                              object:nil
+                                                                               queue:nil
+                                                                          usingBlock:^(NSNotification *note) {
         // account must be considered invalid
-        
         if(weakSelf == nil) return;
-        
         if([weakSelf.oauth isKindOfClass:[STTwitterOS class]]) {
             weakSelf.oauth = nil;
         }
     }];
     
     return self;
+}
+
+- (void)dealloc {
+    if(self.accountStoreObserver) return;
+    [[NSNotificationCenter defaultCenter] removeObserver:self.accountStoreObserver];
 }
 
 + (instancetype)twitterAPIOSWithAccount:(ACAccount *)account {
